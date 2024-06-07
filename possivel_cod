@@ -1,0 +1,159 @@
+segue linha 
+
+
+
+  /*Posições do Vetor:
+
+      [0] = Direita 
+      [1] = Esquerda 
+      [2] = frente  
+      [3] = tras
+      [4] = centro
+
+  */
+
+  //ATENÇÃO 0 = PRETO E 1 = BRANCO 
+ void acele()
+{   
+    //SE O SENSOR DA ESQUERDA ESTIVER DESLIGADO
+    if (digitalRead(sIR[1]) == HIGH) { // Sensor da Esquerda
+      
+        // Enquanto o valor do sensor estiver desligado (1), gire para a direita
+        while (digitalRead(sIR[0]) > 20) { // Sensor da Direita
+            Serial.println("Virar esq");
+            robot_right(130); // Ajuste a velocidade conforme necessário
+            robot_left(70); // Ajuste a velocidade conforme necessário
+            delay(50);
+        }
+    }
+
+    //SE O SENSOR DA DIREITA ESTIVER DESLIGADO
+    if (digitalRead(sIR[0]) == HIGH) { // Sensor da Direita
+        // Enquanto o valor do sensor estiver desligado (1), gire para a esquerda
+        while (digitalRead(sIR[1]) > 20) { // Sensor da Esquerda
+            Serial.println("Virar Dir");
+            robot_left(130); // Ajuste a velocidade conforme necessário
+            robot_right(70); // Ajuste a velocidade conforme necessário
+            delay(30);
+        }
+    }
+
+    // Verifica se o sensor da frente está desligado
+    if (digitalRead(sIR[2]) == HIGH) { // Sensor da Frente
+        // Enquanto o valor do sensor estiver desligado,desacelere
+        while (digitalRead(sIR[2]) > 20) { // Sensor da Frente
+            Serial.println("desacelera");
+            robot_left(50); // Ajuste a velocidade
+            robot_right(50); // Ajuste a velocidade 
+            delay(30);
+        }
+    } 
+    
+    // Verifica se o sensor da frente está desligado
+    if (digitalRead(sIR[2]) == HIGH) { 
+        // Enquanto o valor do sensor estiver desligado , acelere para frente
+        while(digitalRead(sIR[3]) > 20) {
+            Serial.println("acelera");
+            robot_left(255);
+            robot_right(255);// Ajuste a velocidade 
+        }
+    }
+    
+    // EM CASO DO ROBÔ ESTAR PERFEITAMENTE ALINHADO, OU NO BRANCO
+    if(digitalRead(sIR[4]) == HIGH) { // Sensor Central
+        Serial.println("Segue reto");
+        robot_forward(100); // Ajuste a velocidade conforme necessário
+        delay(20);
+    }
+}
+
+
+-----------------------------------------------------------------------------------------------------
+
+motor
+
+void robot_backward(unsigned char v) {
+    motor3.setSpeed(v);
+    motor3.run(BACKWARD);
+    motor4.setSpeed(v);
+    motor4.run(FORWARD);
+}
+
+void robot_forward(unsigned char v) {
+    motor3.setSpeed(v);
+    motor3.run(FORWARD);
+    motor4.setSpeed(v);
+    motor4.run(BACKWARD);
+}
+
+void robot_left(unsigned char v) {
+    motor3.setSpeed(v);
+    motor3.run(BACKWARD);
+    motor4.setSpeed(v);
+    motor4.run(FORWARD);
+}
+
+void robot_right(unsigned char v) {
+    motor3.setSpeed(v);
+    motor3.run(FORWARD);
+    motor4.setSpeed(v);
+    motor4.run(BACKWARD);
+}
+
+void robot_stop() {
+    motor3.run(RELEASE);
+    motor4.run(RELEASE);
+}
+
+
+--------------------------------------------------------------------------------------------
+
+prog
+
+#include <AFMotor.h>
+#include <Ultrasonic.h>
+
+// PINOS MOTOR
+AF_DCMotor motor3(2); //Seleção do Motor 1
+AF_DCMotor motor4(4); //Seleção do Motor 2
+
+// PINOS IR
+int sIR[] = {52, 51, 49, 50,53};
+
+// PINOS ULTRASSÔNICO
+#define TRIGGER_PIN 37
+#define ECHO_PIN 39
+Ultrasonic ultrasonic(TRIGGER_PIN, ECHO_PIN);
+
+void setup() {
+    // DECLARANDO O SENSOR IR COMO INPUT
+    for (int i = 0; i <= 4; i++) {
+        pinMode(sIR[i], INPUT);
+    }
+
+    // INICIALIZANDO PINOS LED PORTA ANALÓGICA
+    pinMode(A9, OUTPUT); // VerdeEsquerda
+    pinMode(A10, OUTPUT); // SLEsquerda
+    pinMode(A8, OUTPUT); // SLDireita
+    pinMode(A12, OUTPUT); // VerdeDireita 
+
+    // INICIALIZANDO SERIAL
+    Serial.begin(9600);
+
+    // INICIALIZANDO SENSOR ULTRASSÔNICO
+    Ultrasonic ultrasonic(TRIGGER_PIN, ECHO_PIN);
+}
+
+void loop() {
+    // LEITURA DA DISTÂNCIA PELO SENSOR ULTRASSÔNICO
+    float distance_cm = ultrasonic.read();
+
+    // VERIFICANDO DISTÂNCIA PARA DECIDIR A AÇÃO
+    if (distance_cm < 20) {
+        // SE A DISTÂNCIA FOR MENOR QUE 20CM, PARE O BARCO
+        robot_stop();
+    } else {
+        // SE A DISTÂNCIA FOR MAIOR QUE 20CM, CONTINUE COM O CONTROLE BASEADO NO SENSOR IR
+        acele();
+    }
+}
